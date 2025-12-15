@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SecureVault | Cloud Manager</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="text-slate-800 h-screen overflow-hidden relative">
+
+    <div id="viewAuth" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-50">
+        <div class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100">
+            <div class="bg-indigo-600 p-8 text-center relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-full bg-indigo-500 opacity-20" style="background-image: radial-gradient(#fff 2px, transparent 2px); background-size: 20px 20px;"></div>
+                <div class="relative z-10">
+                    <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                    </div>
+                    <h1 class="text-2xl font-bold text-white tracking-tight">SecureVault</h1>
+                    <p class="text-indigo-100 text-sm mt-1">Cloud Password Manager</p>
+                </div>
+            </div>
+
+            <div class="p-8">
+                <form id="authForm" onsubmit="handleAuth(event)">
+                    <div class="space-y-5">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Email Address</label>
+                            <input type="email" id="authEmail" required autocomplete="username"
+                                class="w-full px-4 py-3 rounded-lg bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all font-medium">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Password</label>
+                            <input type="password" id="authPass" required autocomplete="current-password"
+                                class="w-full px-4 py-3 rounded-lg bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all font-medium">
+                        </div>
+
+                        <div id="forgotPassContainer" class="flex justify-end">
+                            <button type="button" onclick="handleForgotPassword()" class="text-xs text-indigo-600 hover:text-indigo-800 hover:underline">
+                                Forgot Password?
+                            </button>
+                        </div>
+
+                        <div id="authError" class="hidden p-3 rounded-lg bg-red-50 text-red-600 text-sm border border-red-100 flex items-center gap-2">
+                            <span id="authErrorText">Error message</span>
+                        </div>
+
+                        <button type="submit" id="authBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-lg shadow-lg shadow-indigo-500/30 transition-all transform active:scale-95">
+                            Open Vault
+                        </button>
+                    </div>
+                </form>
+
+                <div class="mt-6 text-center">
+                    <p class="text-sm text-slate-500">
+                        <span id="authToggleText">First time here?</span>
+                        <button onclick="toggleAuthMode()" id="authToggleBtn" class="text-indigo-600 font-semibold hover:underline">Create Vault</button>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="viewVault" class="hidden h-full flex flex-col bg-slate-100">
+        
+        <header class="bg-white border-b border-slate-200 px-4 sm:px-6 py-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                </div>
+                <div>
+                    <h2 class="text-sm font-bold text-slate-800 leading-tight">My Vault</h2>
+                    <p id="userEmailDisplay" class="text-xs text-slate-500 font-mono">user@example.com</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <div class="relative group">
+                    <button class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors flex items-center gap-1" title="Export Data">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        <span class="text-xs font-semibold hidden sm:inline">Export</span>
+                    </button>
+                    <div class="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-xl border border-slate-100 hidden group-hover:block z-50">
+                        <button onclick="exportData('pdf')" class="block w-full text-left px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-indigo-600 first:rounded-t-lg flex items-center gap-2">
+                            <span class="text-red-500 font-bold">PDF</span> Document
+                        </button>
+                        <button onclick="exportData('csv')" class="block w-full text-left px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-indigo-600 flex items-center gap-2">
+                            <span class="text-green-600 font-bold">CSV</span> Excel File
+                        </button>
+                        <button onclick="exportData('json')" class="block w-full text-left px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-indigo-600 last:rounded-b-lg flex items-center gap-2">
+                            <span class="text-yellow-500 font-bold">JSON</span> Raw Data
+                        </button>
+                    </div>
+                </div>
+
+                <button onclick="handleLogout()" class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Logout">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-4 sm:p-6 hide-scroll">
+            <div class="max-w-6xl mx-auto">
+                <div class="mb-6 relative">
+                    <input type="text" id="searchInput" onkeyup="filterVault()" placeholder="Search your passwords..." 
+                        class="w-full pl-10 pr-4 py-3 rounded-xl border-none bg-white shadow-sm text-slate-700 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-3 top-3.5 text-slate-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+
+                <div id="emptyState" class="hidden flex flex-col items-center justify-center mt-20 text-center opacity-60">
+                    <div class="w-20 h-20 bg-slate-200 rounded-full flex items-center justify-center mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-slate-700">Vault is Empty</h3>
+                    <p class="text-sm text-slate-500">Tap the + button to add your first password.</p>
+                </div>
+
+                <div id="vaultGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-20"></div>
+            </div>
+        </main>
+
+        <button onclick="openModal()" class="fab-pulse fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 rounded-full text-white shadow-xl flex items-center justify-center hover:bg-indigo-700 active:scale-95 transition-transform z-40">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+        </button>
+    </div>
+
+    <div id="modalOverlay" class="hidden fixed inset-0 z-[60] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div id="modalCard" class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden transform transition-all scale-95 opacity-0 flex flex-col max-h-[90vh]">
+            
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 flex-shrink-0">
+                <h3 class="font-bold text-slate-800 text-lg">Add New Credential</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto">
+                <div class="space-y-6">
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Website</label>
+                            <input type="text" id="inputSite" placeholder="e.g. Google" 
+                                class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-indigo-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Username / Email</label>
+                            <input type="text" id="inputUser" placeholder="email@example.com" autocomplete="username"
+                                class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-indigo-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Password</label>
+                            <div class="relative">
+                                <input type="text" id="inputPass" placeholder="Type or Generate" autocomplete="off"
+                                    class="w-full pl-4 pr-12 py-3 rounded-lg border border-slate-200 focus:border-indigo-500 outline-none font-mono text-sm tracking-wide bg-slate-50">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 rounded-xl p-5 border border-slate-200">
+                        <div class="flex justify-between items-end mb-4">
+                            <h4 class="text-sm font-bold text-slate-700 uppercase">Generator</h4>
+                            <span id="charLengthDisplay" class="bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full">16 Chars</span>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <input type="range" id="genLength" min="8" max="200" value="16" oninput="updateGenDisplay()"
+                                class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                            <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+                                <span>8</span>
+                                <span>200</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <label class="flex items-center gap-2 cursor-pointer bg-white p-2 rounded border border-slate-100 hover:border-indigo-200 transition">
+                                <input type="checkbox" id="useUpper" checked onchange="runGenerator()" class="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
+                                <span class="text-xs font-medium text-slate-700">ABC (Caps)</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer bg-white p-2 rounded border border-slate-100 hover:border-indigo-200 transition">
+                                <input type="checkbox" id="useLower" checked onchange="runGenerator()" class="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
+                                <span class="text-xs font-medium text-slate-700">abc (Small)</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer bg-white p-2 rounded border border-slate-100 hover:border-indigo-200 transition">
+                                <input type="checkbox" id="useNums" checked onchange="runGenerator()" class="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
+                                <span class="text-xs font-medium text-slate-700">123 (Nums)</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer bg-white p-2 rounded border border-slate-100 hover:border-indigo-200 transition">
+                                <input type="checkbox" id="useSyms" checked onchange="runGenerator()" class="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
+                                <span class="text-xs font-medium text-slate-700">!@# (Syms)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button onclick="saveItem()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-lg shadow-lg shadow-indigo-500/30 transition-all active:scale-[0.98]">
+                        Save Credential
+                    </button>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed top-6 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-xl z-[70] transition-all duration-300 opacity-0 translate-y-[-20px] pointer-events-none flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+        <span id="toastMsg" class="font-medium text-sm">Copied to clipboard</span>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
